@@ -16,7 +16,6 @@ func NewKVStore() *KVStore {
 	// Initialize KVStore fields
 	return &KVStore{
 		store: make(map[string]string),
-		mutex: sync.RWMutex{},
 	}
 }
 
@@ -27,7 +26,7 @@ func (k *KVStore) Get(key string) (string, error) {
 
 	value, ok := k.store[key]
 	if !ok {
-		return "", errors.New("key not found")
+		return "", errors.New("key not found: " + key)
 	}
 	return value, nil
 }
@@ -47,7 +46,7 @@ func (k *KVStore) Delete(key string) error {
 	defer k.mutex.Unlock()
 
 	if _, ok := k.store[key]; !ok {
-		return errors.New("key not found")
+		return errors.New("key not found: " + key)
 	}
 	delete(k.store, key)
 	return nil

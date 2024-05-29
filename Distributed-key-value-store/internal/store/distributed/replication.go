@@ -1,23 +1,21 @@
 package distributed
 
 import (
+	"distributed/internal/store/inmemory"
 	"sync"
 )
 
-// ReplicationFactor defines the number of replicas for each key.
-const ReplicationFactor = 3
-
 // ReplicatedStore represents a replicated key-value store.
 type ReplicatedStore struct {
-	Nodes []*DistributedStore
+	Nodes []*Node // Array of nodes
 	mu    sync.RWMutex
 }
 
 // NewReplicatedStore creates a new instance of ReplicatedStore with the specified number of nodes.
-func NewReplicatedStore(numNodes int) *ReplicatedStore {
-	nodes := make([]*DistributedStore, numNodes)
+func NewReplicatedStore(numNodes int, replicas int) *ReplicatedStore {
+	nodes := make([]*Node, numNodes)
 	for i := range nodes {
-		nodes[i] = NewDistributedStore()
+		nodes[i] = NewNode("node"+string(rune(i)), inmemory.NewInMemoryStore(), "", replicas) // Initialize each node with an in-memory store and replication factor
 	}
 	return &ReplicatedStore{
 		Nodes: nodes,
@@ -29,7 +27,8 @@ func (s *ReplicatedStore) Get(key string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, node := range s.Nodes {
-		if value, ok := node.Get(key); ok {
+		value, _ := node.Store.Get(key)
+		if value != "" {
 			return value, true
 		}
 	}
@@ -41,7 +40,7 @@ func (s *ReplicatedStore) Put(key, value string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, node := range s.Nodes {
-		node.Put(key, value)
+		node.Store.Set(key, value)
 	}
 }
 
@@ -50,6 +49,6 @@ func (s *ReplicatedStore) Delete(key string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, node := range s.Nodes {
-		node.Delete(key)
+		node.Store.Delete(key)
 	}
 }

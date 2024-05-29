@@ -2,10 +2,13 @@ package network
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
+
+	model "distributed/pkg/models"
 )
 
 // Client represents the key-value store client.
@@ -24,8 +27,9 @@ func NewClient(baseURL string) *Client {
 
 // Get sends a GET request to retrieve a value.
 func (c *Client) Get(key string) (string, error) {
-	endpoint := fmt.Sprintf("%s/%s", c.baseURL, url.PathEscape(key))
+	endpoint := fmt.Sprintf("%s/get?key=%s", c.baseURL, url.QueryEscape(key))
 	resp, err := c.client.Get(endpoint)
+	fmt.Println("getrespose", resp)
 	if err != nil {
 		return "", fmt.Errorf("error making GET request: %w", err)
 	}
@@ -35,26 +39,31 @@ func (c *Client) Get(key string) (string, error) {
 		return "", fmt.Errorf("received non-200 response: %s", resp.Status)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("error reading response body: %w", err)
 	}
 
-	return string(body), nil
+	var kv model.KeyValue
+	if err := json.Unmarshal(body, &kv); err != nil {
+		return "", fmt.Errorf("error unmarshaling response body: %w", err)
+	}
+
+	return kv.Value, nil
 }
 
-// Put sends a PUT request to set a value.
-func (c *Client) Put(key, value string) error {
-	endpoint := fmt.Sprintf("%s/%s", c.baseURL, url.PathEscape(key))
-	req, err := http.NewRequest(http.MethodPut, endpoint, bytes.NewBufferString(value))
+// Set sends a POST request to set a value.
+func (c *Client) Set(key, value string) error {
+	endpoint := fmt.Sprintf("%s/set", c.baseURL)
+	kv := model.KeyValue{Key: key, Value: value}
+	data, err := json.Marshal(kv)
 	if err != nil {
-		return fmt.Errorf("error creating PUT request: %w", err)
+		return fmt.Errorf("error marshaling key-value pair: %w", err)
 	}
-	req.Header.Set("Content-Type", "text/plain")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Post(endpoint, "application/json", bytes.NewBuffer(data))
 	if err != nil {
-		return fmt.Errorf("error making PUT request: %w", err)
+		return fmt.Errorf("error making POST request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -67,7 +76,7 @@ func (c *Client) Put(key, value string) error {
 
 // Delete sends a DELETE request to delete a value.
 func (c *Client) Delete(key string) error {
-	endpoint := fmt.Sprintf("%s/%s", c.baseURL, url.PathEscape(key))
+	endpoint := fmt.Sprintf("%s/delete?key=%s", c.baseURL, url.QueryEscape(key))
 	req, err := http.NewRequest(http.MethodDelete, endpoint, nil)
 	if err != nil {
 		return fmt.Errorf("error creating DELETE request: %w", err)

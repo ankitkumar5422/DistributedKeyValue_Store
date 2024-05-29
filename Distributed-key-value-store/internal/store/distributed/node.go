@@ -2,20 +2,19 @@ package distributed
 
 import (
 	"bytes"
-	"distributed/internal/store"
+	"distributed/internal/store/inmemory"
 	model "distributed/pkg/models"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-
 	"sync"
 )
 
 // Node represents a single node in the distributed key-value store.
 type Node struct {
 	ID       string
-	Store    store.KVStore
+	Store    *inmemory.InMemoryStore
 	Peers    map[string]string // Map of peer node IDs to their addresses
 	mutex    sync.RWMutex      // Mutex for synchronizing access to Peers
 	address  string            // Address of this node
@@ -23,7 +22,7 @@ type Node struct {
 }
 
 // NewNode creates a new Node instance.
-func NewNode(id string, store store.KVStore, address string, replicas int) *Node {
+func NewNode(id string, store *inmemory.InMemoryStore, address string, replicas int) *Node {
 	return &Node{
 		ID:       id,
 		Store:    store,
@@ -32,7 +31,6 @@ func NewNode(id string, store store.KVStore, address string, replicas int) *Node
 		replicas: replicas,
 		mutex:    sync.RWMutex{}, // Initialize the mutex
 	}
-
 }
 
 // AddPeer adds a new peer node to the node's peer list.
@@ -73,24 +71,21 @@ func (n *Node) HandleGetRequest(w http.ResponseWriter, r *http.Request) {
 
 // HandleSetRequest handles POST requests to set values.
 func (n *Node) HandleSetRequest(w http.ResponseWriter, r *http.Request) {
-	kv := model.KeyValue{Key: "someKey", Value: "someValue"}
+	kv := model.KeyValue{}
 	if err := json.NewDecoder(r.Body).Decode(&kv); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := n.Store.Set(kv.Key, kv.Value); err != nil {
-		// Log the error for debugging purposes
 		log.Println("Error setting key-value pair in store:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Assuming n.replicateSet is implemented correctly
 	n.replicateSet(kv.Key, kv.Value)
 
 	w.WriteHeader(http.StatusOK)
-
 }
 
 // HandleDeleteRequest handles DELETE requests to delete values.

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributed Key-Value Store</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Distributed Key-Value Store</h1>
+        
+        <!-- Form for setting key-value pairs -->
+        <form id="set-form">
+            <label for="key">Key:</label>
+            <input type="text" id="key" name="key" required>
+            <label for="value">Value:</label>
+            <input type="text" id="value" name="value" required>
+            <button type="submit">Set</button>
+        </form>
+
+        <!-- Form for getting value by key -->
+        <form id="get-form">
+            <label for="get-key">Key:</label>
+            <input type="text" id="get-key" name="get-key" required>
+            <button type="submit">Get</button>
+        </form>
+
+        <!-- Display section for node status -->
+        <div id="node-status">
+            <h2>Node Status</h2>
+            <ul id="node-list">
+                <!-- Node status will be displayed here -->
+            </ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

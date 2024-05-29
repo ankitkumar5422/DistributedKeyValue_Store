@@ -2,20 +2,22 @@ package main
 
 import (
 	"distributed/internal/network"
-	"fmt"
+	"distributed/internal/store/distributed"
+	"distributed/internal/store/inmemory"
 	"log"
 )
 
 func main() {
-	fmt.Println("Hello, Distributed Key-Value Store!")
+	store := inmemory.NewInMemoryStore()
 
-	// Create a new server instance
-	server := network.NewServer()
+	// Create a new distributed node with the in-memory store
+	node := distributed.NewNode("node1", store, "localhost:4006", 3)
 
-	// Start the key-value store server
-	err := server.Start()
-	if err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	// Initialize the server with the node
+	server := network.NewServer(node)
 
+	// Start the server
+	if err := server.Start(); err != nil {
+		log.Fatalf("Failed to start the server: %v", err)
 	}
 }
