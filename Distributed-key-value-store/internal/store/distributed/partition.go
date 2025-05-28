@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-// PartitionSize defines the number of partitions in the system.
+// PartitionSize defines the number of partitions in the system
 const PartitionSize = 10
 
 // VirtualNodes defines the number of virtual nodes per partition for consistent hashing.
